@@ -209,7 +209,7 @@ extension AXUIElement {
     /// whichever window is topmost at the specified location. Note that if the system-wide accessibility
     /// object is passed in the application parameter, the position test is not restricted to a particular application."
     ///
-    public func elementAt(position: CGPoint) throws -> AXUIElement? {
+    public func element(at position: CGPoint) throws -> AXUIElement? {
         try self.elementAtPosition(Float(position.x), Float(position.y))
     }
     
