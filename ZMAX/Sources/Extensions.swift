@@ -38,8 +38,9 @@ extension NSRunningApplication
 	}
 }
 
-extension AXUIElement
-{
+extension AXUIElement {
+    
+    /// Creates the systemwide `AXUIElement`
 	public class var systemwide: AXUIElement
 	{
 		return AXUIElementCreateSystemWide()
@@ -177,50 +178,57 @@ extension AXUIElement
 }
 
 extension AXUIElement {
-    /// Gets the element at the specified coordinates.
+    /// Gets the topmost element at the specified coordinates.
     ///
-    /// This can only be called on applications and the system-wide element.
-    public func elementAtPosition(appUIElement: AXUIElement, _ x: Float, _ y: Float) throws -> AXUIElement? {
+    /// **This method can only be called on applications and the system-wide element.**
+    ///
+    /// From ``AXUIElementCopyElementAtPosition(application:,x:,y:,element:)``:
+    ///
+    /// "This function does hit-testing based on window z-order (that is, layering).
+    /// If one window is on top of another window, the returned accessibility object comes from
+    /// whichever window is topmost at the specified location. Note that if the system-wide accessibility
+    /// object is passed in the application parameter, the position test is not restricted to a particular application."
+    ///
+    public func elementAtPosition(_ x: Float, _ y: Float) throws -> AXUIElement? {
         var element: AXUIElement?
         let error = AXUIElementCopyElementAtPosition(self, x, y, &element)
-        if error == .noValue {
-            return nil
-        }
-        guard error == .success else {
+        if error != .success {
             throw error
         }
         return element
     }
     
-    public static func systemwide(at position: NSPoint) -> AXUIElement? {
-        let swElement = AXUIElementCreateSystemWide()
-        do {
-            if let swElementAtPos = try swElement.elementAtPosition(appUIElement: swElement, Float(position.x), Float(position.y)) {
-                return swElementAtPos
-            }
-        } catch {
-            print("\(error.self): \(error.localizedDescription)")
-            // FIXME: os_log or throw
-        }
-        return nil
+    /// Gets the topmost element at the specified coordinates.
+    ///
+    /// **This method can only be called on applications and the system-wide element.**
+    ///
+    /// From ``AXUIElementCopyElementAtPosition(application:,x:,y:,element:)``:
+    ///
+    /// "This function does hit-testing based on window z-order (that is, layering).
+    /// If one window is on top of another window, the returned accessibility object comes from
+    /// whichever window is topmost at the specified location. Note that if the system-wide accessibility
+    /// object is passed in the application parameter, the position test is not restricted to a particular application."
+    ///
+    public func elementAt(position: CGPoint) throws -> AXUIElement? {
+        try self.elementAtPosition(Float(position.x), Float(position.y))
     }
     
     /// Returns the process ID of the application that the element is a part of.
     ///
     /// Throws only if the element is invalid (`Errors.InvalidUIElement`).
-    open func pid() throws -> pid_t {
+    public func pid() throws -> pid_t {
         var pid: pid_t = -1
         let error = AXUIElementGetPid(self, &pid)
-        guard error == .success else {
+        if error != .success {
             throw error
         }
         return pid
     }
 }
 
-// for conversion AXValue (wrapper) <> wrapped value
-// from: https://github.com/keith/ModMove/blob/main/ModMove/AXValue%2BHelper.swift
 extension AXValue {
+    // for conversion AXValue (wrapper) <> wrapped value
+    // from: https://github.com/keith/ModMove/blob/main/ModMove/AXValue%2BHelper.swift
     public func toValue<T>() -> T? {
         let pointer = UnsafeMutablePointer<T>.allocate(capacity: 1)
 	defer {
